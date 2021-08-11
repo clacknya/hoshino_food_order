@@ -78,6 +78,36 @@ class xinshipu:
 		# return {
 		# }
 
+# Yummly
+class yummly:
+
+	URL_QUERY = 'https://www.yummly.com/recipes?q=%s&taste-pref-appended=true'
+
+	async def order(self, name: str) -> dict:
+
+		URL = URL_QUERY % name
+
+		r = await get(URL)
+
+		html = lxml.html.fromstring(await r.text)
+		script = html.cssselect('div.structured-data-info > script')[0]
+		data = json.loads(script.text)
+		items = data['itemListElement']
+		item = random.choice(items)
+
+		return {
+			'name': item.get('name', 'NoName'),
+			'img':  item.get('image')[0],
+		}
+
+		# items = html.cssselect('.recipe-card')
+		# item = random.choice(items)
+
+		# return {
+			# 'name': item.cssselect('a.link-overlay')[0].get('title', 'NoName'),
+			# 'img':  item.cssselect('img.recipe-card-img.placeholder')[0].get('src', '').split('=')[0],
+		# }
+
 def load_config(filename: str) -> dict:
 	with open(filename, 'r') as f:
 		return json.load(f)
