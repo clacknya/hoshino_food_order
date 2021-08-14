@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from os.path import dirname, join
+import sys
+import inspect
 
 import json
 import lxml.html
@@ -32,11 +34,13 @@ class meishij:
 
 		html = lxml.html.fromstring(await r.text)
 		items = html.cssselect('div[class$="_cpitem"] > a.img > img')
+		if len(items) == 0:
+			return {}
 		item = random.choice(items)
 
 		return {
-			'name': item.get('alt', 'NoName'),
-			'img':  item.get('src', ''),
+			'name': item.get('alt'),
+			'img':  item.get('src'),
 		}
 
 # 心食谱
@@ -53,11 +57,13 @@ class xinshipu:
 
 		html = lxml.html.fromstring(await r.text)
 		items = html.cssselect('a.shipu > div.v-pw > img')
+		if len(items) == 0:
+			return {}
 		item = random.choice(items)
 
 		return {
-			'name': item.get('alt', 'NoName'),
-			'img':  item.get('src', ''),
+			'name': item.get('alt'),
+			'img':  item.get('src'),
 		}
 
 # 美食天下
@@ -73,6 +79,8 @@ class xinshipu:
 
 		# html = lxml.html.fromstring(await r.text)
 		# items = html.cssselect('#search_res_list li')
+		# if len(items) == 0:
+			# return {}
 		# item = random.choice(items)
 
 		# return {
@@ -93,20 +101,14 @@ class yummly:
 		script = html.cssselect('div.structured-data-info > script')[0]
 		data = json.loads(script.text)
 		items = data['itemListElement']
+		if len(items) == 0:
+			return {}
 		item = random.choice(items)
 
 		return {
-			'name': item.get('name', 'NoName'),
+			'name': item.get('name'),
 			'img':  item.get('image')[0],
 		}
-
-		# items = html.cssselect('.recipe-card')
-		# item = random.choice(items)
-
-		# return {
-			# 'name': item.cssselect('a.link-overlay')[0].get('title', 'NoName'),
-			# 'img':  item.cssselect('img.recipe-card-img.placeholder')[0].get('src', '').split('=')[0],
-		# }
 
 def load_config(filename: str) -> dict:
 	with open(filename, 'r') as f:
@@ -114,17 +116,15 @@ def load_config(filename: str) -> dict:
 
 config = load_config(join(dirname(__file__), 'config.json'))
 
-async def query(text: str) -> str:
-	if not hasattr(query, 'waiter'):
-		query.waiter = {
-			'meishij':  meishij,
-			'xinshipu': xinshipu,
-		}[config.get('source', 'meishij')]()
-	info = await query.waiter.order(text)
-	return MessageSegment.image(info['img']) + info['name']
+waiter = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))[config.get('source', 'meishij')]()
+
+async def query(text: str) -> dict:
+	info = await waiter.order(text)
+	return MessageSegment.image(info.get('img', 'base64://R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=')) + info.get('name', f"本店没有{text}哦")
 
 @sv.on_prefix('点餐')
 async def order(bot, ev: CQEvent):
 	s = escape(ev.message.extract_plain_text().strip())
 	msg = await query(s)
 	await bot.send(ev, msg, at_sender=True)
+
