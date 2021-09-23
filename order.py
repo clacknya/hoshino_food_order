@@ -161,6 +161,7 @@ async def order(bot, ev: CQEvent):
 		try:
 			async with aiofiles.tempfile.NamedTemporaryFile('wb', delete=False) as f:
 				await f.write(bytes)
+			os.chmod(f.name, 0o644)
 			msg = str(MessageSegment.image(f"file:///{f.name}")) + info.get('name', '')
 			await bot.send(ev, msg, at_sender=True)
 		finally:
