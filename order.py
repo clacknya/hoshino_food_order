@@ -34,33 +34,25 @@ class base():
 	BLANK = 'base64://R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs='
 
 	def __init__(self):
-		default_haaders = {
+		self.default_haaders = {
 			'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0',
 			'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 			'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2',
 			'Accept-Encoding': 'gzip, deflate',
 		}
-		self.session = aiohttp.ClientSession(headers=default_haaders, raise_for_status=True)
-
-	def __del__(self):
-		loop = asyncio.get_running_loop()
-		if loop.is_running():
-			loop.create_task(self.session.close())
-		else:
-			loop.run_until_complete(self.session.close())
-			loop.close()
 
 	async def request(self, method: str, url: str, ctype: str, **kwargs) -> str:
 		sv.logger.info(f"{method} {url}")
-		async with self.session.request(method, url, **kwargs) as resp:
-			if ctype == 'byte':
-				ret = await resp.read()
-			elif ctype == 'text':
-				ret = await resp.text()
-			elif ctype == 'json':
-				ret = await resp.json(content_type=None)
-			else:
-				raise Exception('Unknow content type')
+		async with aiohttp.ClientSession(headers=self.default_haaders, raise_for_status=True) as session:
+			async with session.request(method, url, **kwargs) as resp:
+				if ctype == 'byte':
+					ret = await resp.read()
+				elif ctype == 'text':
+					ret = await resp.text()
+				elif ctype == 'json':
+					ret = await resp.json(content_type=None)
+				else:
+					raise Exception('Unknow content type')
 		return ret
 
 	# async def search(self, name: str) -> List:
