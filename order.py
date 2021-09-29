@@ -160,6 +160,5 @@ async def order(bot, ev: CQEvent):
 			if os.path.isfile(f.name):
 				os.remove(f.name)
 	else:
-		msg = str(MessageSegment.image(waiter.BLANK)) + info.get('name', f"本店没有{name}哦")
-		await bot.send(ev, msg, at_sender=True)
+		await bot.send(ev, info.get('name', f"本店没有{name}哦"), at_sender=True)
 
